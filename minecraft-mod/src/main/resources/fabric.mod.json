@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "worldhost",
+  "version": "${version}",
+  "name": "World Host",
+  "description": "Открой свой мир для других игроков прямо из игры с полной панелью управления.",
+  "authors": ["WorldHost"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/worldhost/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.worldhost.WorldHostMod"],
+    "client": ["com.worldhost.client.WorldHostClient"]
+  },
+  "mixins": ["worldhost.mixins.json", "worldhost.client.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "fabric-api": "*",
+    "minecraft": "~1.20.1"
+  }
+}
