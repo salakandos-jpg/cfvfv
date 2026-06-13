@@ -1,7 +1,7 @@
 package com.worldhost.client;
 
 import com.worldhost.WorldHostMod;
-import com.worldhost.client.event.KeyInputHandler;
+import com.worldhost.client.gui.HostControlPanelScreen;
 import com.worldhost.client.gui.WorldHostScreen;
 import com.worldhost.network.WorldHostNetwork;
 import net.fabricmc.api.ClientModInitializer;
@@ -21,9 +21,18 @@ public class WorldHostClient implements ClientModInitializer {
     public static KeyBinding openMenuKey;
 
     public static boolean lanOpen = false;
-    public static String lanPort = "";
-    public static String currentMotd = "";
-    public static int currentMaxPlayers = 20;
+    public static String  lanPort = "";
+    public static String  currentMotd = "";
+    public static int     currentMaxPlayers = 20;
+
+    private static WorldDiscoveryClient discoveryClient;
+
+    public static WorldDiscoveryClient getDiscovery() {
+        if (discoveryClient == null) {
+            discoveryClient = new WorldDiscoveryClient(WorldHostMod.config.relayUrl);
+        }
+        return discoveryClient;
+    }
 
     @Override
     public void onInitializeClient() {
@@ -35,11 +44,14 @@ public class WorldHostClient implements ClientModInitializer {
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (openMenuKey.wasPressed() && client.world != null) {
-                client.setScreen(new WorldHostScreen());
+            while (openMenuKey.wasPressed()) {
+                if (client.world != null) {
+                    client.setScreen(new WorldHostScreen());
+                }
             }
         });
 
+        // Player list sync from server
         ClientPlayNetworking.registerGlobalReceiver(WorldHostNetwork.PLAYER_LIST_SYNC, (client, handler, buf, sender) -> {
             int count = buf.readInt();
             PlayerInfo[] players = new PlayerInfo[count];
@@ -53,26 +65,27 @@ public class WorldHostClient implements ClientModInitializer {
                 );
             }
             client.execute(() -> {
-                if (client.currentScreen instanceof com.worldhost.client.gui.HostControlPanelScreen panel) {
+                if (client.currentScreen instanceof HostControlPanelScreen panel) {
                     panel.updatePlayerList(players);
                 }
             });
         });
 
+        // Status sync from server
         ClientPlayNetworking.registerGlobalReceiver(WorldHostNetwork.STATUS_SYNC, (client, handler, buf, sender) -> {
             boolean open = buf.readBoolean();
-            String port = buf.readString();
-            String motd = buf.readString();
-            int maxPlayers = buf.readInt();
+            String port  = buf.readString();
+            String motd  = buf.readString();
+            int maxPl    = buf.readInt();
             client.execute(() -> {
-                lanOpen = open;
-                lanPort = port;
-                currentMotd = motd;
-                currentMaxPlayers = maxPlayers;
+                lanOpen           = open;
+                lanPort           = port;
+                currentMotd       = motd;
+                currentMaxPlayers = maxPl;
             });
         });
 
-        WorldHostMod.LOGGER.info("[WorldHost] Клиент инициализирован. Delete — открыть меню.");
+        WorldHostMod.LOGGER.info("[WorldHost] Клиент готов. Delete — открыть меню World Host.");
     }
 
     public record PlayerInfo(String name, String uuid, String gameMode, boolean isOp, int ping) {}
